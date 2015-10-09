@@ -19,21 +19,61 @@ clear PPIM
 for i = 1 : Nd
     MimW(:,i) = MimM(:,i)/sum(MimM(:,i));
 end
-clear MimM
+%clear MimM
 
 [idxMIM, idxPPI] = find(bridgeM);
+
+%return unique array in sorted order
+%gMim: all phenotypes that have at least one interaction to a gene
 gMim = unique(MimIDs_5080(idxMIM)); %MimIDs having gene annotation
+%length(gMim) = 1126 
 
 cnt = 0;
 t = cputime;
 Nstep = [];
-p0=zeros(Ng,1);
+%p0=zeros(Ng,1);
 for i = 1 : length(gMim)
+    
+    %find the index in [1-5080] of phenotype gMim(i)
     idxD = find(ismember(MimIDs_5080,gMim(i)));
+    
     idxG = find(bridgeM(idxD,:)>0); % index of phenotype ralated genes
-    bridgeM(idxD,idxG) = 0;
+    bridgeM(idxD,idxG) = 0; %remove all connections to genes
     [G2P,P2G] = getBridgeM(bridgeM);
+    
     d0 = zeros(Nd,1); d0(idxD) = 1; % seed phenotype
+    
+    %----------------------------------------------------------------------
+    %assigning seed phenotypes
+    adjPhenotype = find(MimW(:,idxD)); 
+
+    for j = 1 : length(adjPhenotype)
+        d0(adjPhenotype(j)) = MimW(idxD, adjPhenotype(j));
+    end
+    %----------------------------------------------------------------------
+    
+%     d0 = d0/sum(d0); %normalising Phenotype vector
+    
+    p0=zeros(Ng,1);
+    %----------------------------------------------------------------------
+    %assigning causal genes of neighboring phenotypes as seeds
+     for j = 1 : length(adjPhenotype)
+            causeGenes = find(P2G(:, adjPhenotype(j)));
+            pSimilarity = MimW(adjPhenotype(j), idxD);
+            
+            for a = 1 : length(causeGenes)
+                seedGeneValue = pSimilarity * P2G(causeGenes(a), adjPhenotype(j));
+                
+                if(p0(causeGenes(a)) < seedGeneValue)
+                    p0(causeGenes(a)) = seedGeneValue;
+                end
+            end
+     end
+     
+%      p0 = p0/sum(p0);
+    %----------------------------------------------------------------------
+    
+    
     [p,d,steps] = rwrH(PPIW,MimW,G2P,P2G,gamma,lamda,eta,d0,p0);
     result_p = sort(p,'descend');
     if length(idxG)>1
