@@ -31,7 +31,7 @@ gMim = unique(MimIDs_5080(idxMIM)); %MimIDs having gene annotation
 cnt = 0;
 t = cputime;
 Nstep = [];
-%p0=zeros(Ng,1);
+p0=zeros(Ng,1);
 for i = 1 : length(gMim)
     
     %find the index in [1-5080] of phenotype gMim(i)
@@ -43,32 +43,39 @@ for i = 1 : length(gMim)
     
     d0 = zeros(Nd,1); d0(idxD) = 1; % seed phenotype
     
+%     d0 = rwr(MimM, d0, 0.3);
+    
     %----------------------------------------------------------------------
     %assigning seed phenotypes
-    adjPhenotype = find(MimW(:,idxD)); 
-
-    for j = 1 : length(adjPhenotype)
-        d0(adjPhenotype(j)) = MimW(idxD, adjPhenotype(j));
-    end
+%     adjPhenotype = find(MimW(:,idxD)); 
+    
+%     idxMax = find(max(MimW(adjPhenotype, idxD)));
+    
+%     for j = 1 : length(adjPhenotype)
+%         d0(adjPhenotype(j)) = MimW(adjPhenotype(j), idxD);
+%             d0(adjPhenotype(j)) = 1;
+%     end
+%     d0(idxMax) = 1;
     %----------------------------------------------------------------------
     
-%     d0 = d0/sum(d0); %normalising Phenotype vector
+    d0 = d0/sum(d0); %normalising Phenotype vector
     
-    p0=zeros(Ng,1);
+%     p0=zeros(Ng,1);
     %----------------------------------------------------------------------
     %assigning causal genes of neighboring phenotypes as seeds
-     for j = 1 : length(adjPhenotype)
-            causeGenes = find(P2G(:, adjPhenotype(j)));
-            pSimilarity = MimW(adjPhenotype(j), idxD);
-            
-            for a = 1 : length(causeGenes)
-                seedGeneValue = pSimilarity * P2G(causeGenes(a), adjPhenotype(j));
-                
-                if(p0(causeGenes(a)) < seedGeneValue)
-                    p0(causeGenes(a)) = seedGeneValue;
-                end
-            end
-     end
+%      for j = 1 : length(adjPhenotype)
+%             causeGenes = find(P2G(:, adjPhenotype(j)));
+%             pSimilarity = MimW(adjPhenotype(j), idxD);
+%             
+%             for a = 1 : length(causeGenes)
+%                 seedGeneValue = pSimilarity * P2G(causeGenes(a), adjPhenotype(j));
+%                 
+% %                 if(p0(causeGenes(a)) < seedGeneValue)
+% %                     p0(causeGenes(a)) = seedGeneValue;
+% %                 end
+%                 p0(causeGenes(a)) = 1;
+%             end
+%      end
      
 %      p0 = p0/sum(p0);
     %----------------------------------------------------------------------

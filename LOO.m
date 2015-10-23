@@ -2,6 +2,7 @@ function [LOO1,LOO2] = LOO(lamda,gamma,eta)
 % [LOO1,LOO2] = LOO(0.7, 0.5, 0.5)
 load Mim5NN %Mim5NN includes MimM and MimW, each 5080 * 8919
 clear MimW
+clear PPIW
 load PPIM      %PPI (A_G)matrix 8919 * 8919
 PPIM = (PPIM>0);
 load BridgeM                    %5080 phenotypes * 8919 genes matrix
@@ -13,13 +14,13 @@ Nd = size(MimIDs_5080,1);   %phenotype: 5080 * 1
 for i = 1 : Ng
     PPIW(:,i) = PPIM(:,i)/sum(PPIM(:,i));
 end
-%clear PPIM
+% clear PPIM
 
 % to get the transition matrix for phenotype network
 for i = 1 : Nd
     MimW(:,i) = MimM(:,i)/sum(MimM(:,i));
 end
-%clear MimM
+% clear MimM
 
 
 [idxMIM, idxG] = find(bridgeM); %1428, 1428
@@ -33,19 +34,16 @@ for i = 1 : length(idxMIM)
     
     %----------------------------------------------------------------------
     %assigning neighboring phenotypes as seed phenotypes
-    adjPhenotype = find(MimM(:, idxMIM(i))); %6  
+%     adjPhenotype = find(MimM(:, idxMIM(i)));  
 %    for j = 1 : length(adjPhenotype)
-%         d0(adjPhenotype(j)) = MimM(adjPhenotype(j), idxMIM(i));
+%         d0(adjPhenotype(j)) = MimW(idxMIM(i), adjPhenotype(j));
 %    end
     %----------------------------------------------------------------------
-    
-   
-    
     d0(idxMIM(i)) = 1; % seed phenotype
     
-    d0 = rwr(MimM, d0, 0.3); %gamma = 0.1, 0.3, 0.5, 0.7, 0.9
+%     d0 = rwr(MimM, d0, 0.3); %gamma = 0.1, 0.3, 0.5, 0.7, 0.9
     
-%     d0 = d0/sum(d0);
+    d0 = d0/sum(d0);
     bridgeM(idxMIM(i),idxG(i)) = 0; % remove the phenotype- gene relationship
 
 % to calculate the transition matrix from gene network to phenotype network
@@ -68,7 +66,7 @@ for i = 1 : length(idxMIM)
 
 %     to give the initial value to genes 
     p0=zeros(Ng,1);
-    tem = P2G(:,idxMIM(i))
+    tem = P2G(:,idxMIM(i));
     train_idx = find(tem>0); % seed genes
     
     if ~isempty(train_idx)    
@@ -80,9 +78,12 @@ for i = 1 : length(idxMIM)
 %             adjGenes = find(PPIM(:, train_idx(j)));
 %     
 %             for a = 1 : length(adjGenes)
-%                 if (p0(adjGenes(a)) ~= 1)
-%                     p0(adjGenes(a)) = PPIM(adjGenes(a), train_idx(j));
-%                 end
+%                 
+%                 p0(adjGenes(a)) = 1;
+%                 
+% %                 if (p0(adjGenes(a)) ~= 1)
+% %                     p0(adjGenes(a)) = PPIM(adjGenes(a), train_idx(j));
+% %                 end
 %             end
 %         end
         %----------------------------------------------------------------------
@@ -104,10 +105,28 @@ for i = 1 : length(idxMIM)
 %             end
 %         end
         %----------------------------------------------------------------------
-        
-        
+  
         p0 = p0/sum(p0);
     end
+    
+     %----------------------------------------------------------------------
+%         %rwr on genes network
+%         for j = 1 : length(adjPhenotype)
+%             causeGenes = find(P2G(:, adjPhenotype(j)));
+% %             pSimilarity = MimM(adjPhenotype(j), idxMIM(i));
+%             
+%             for a = 1 : length(causeGenes)
+% %                 seedGeneValue = pSimilarity * P2G(causeGenes(a), adjPhenotype(j));
+%                 seedGeneValue = d0(adjPhenotype(j));
+% 
+%                 if(p0(causeGenes(a)) < seedGeneValue)
+%                     p0(causeGenes(a)) = seedGeneValue;
+%                 end
+%             end
+%         end
+%         
+%     p0 = rwr(PPIM, p0, 0.3);
+        %----------------------------------------------------------------------
     
    
     
