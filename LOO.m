@@ -8,6 +8,10 @@ PPIM = (PPIM>0);
 load BridgeM                    %5080 phenotypes * 8919 genes matrix
 load NeighboringGenes   %1428 * 1 (gene-phenotype links)
 
+load Sfs_P_P;
+load Sfs_G_G;
+load Sfs_G_P;
+
 Ng = length(genes);                 %gene: 8919 genes * 5 matrix
 Nd = size(MimIDs_5080,1);   %phenotype: 5080 * 1
 % to get the transition matrix for gene network

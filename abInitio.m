@@ -19,7 +19,7 @@ clear PPIM
 for i = 1 : Nd
     MimW(:,i) = MimM(:,i)/sum(MimM(:,i));
 end
-%clear MimM
+clear MimM
 
 [idxMIM, idxPPI] = find(bridgeM);
 
