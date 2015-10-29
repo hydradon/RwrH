@@ -6,6 +6,7 @@ PPIM = (PPIM>0);
 load BridgeM                    %5080 phenotypes * 8919 genes matrix
 load NeighboringGenes   %1428 * 1 (gene-phenotype links)
 load Sfs_G_P;
+load CD_G_P;
 
 Ng = length(genes);                 %gene: 8919 genes * 5 matrix
 Nd = size(MimIDs_5080,1);   %phenotype: 5080 * 1
@@ -28,12 +29,20 @@ for i = 1 : length(idxMIM)
     p_g_neighbors = find(bridgeM(idxMIM(i), : ));
     
    %get the Sfs distance from phenotype idxD to all genes
-    FS_scores = Sfs_G_P(idxMIM(i), :);
+%     FS_scores = Sfs_G_P(idxMIM(i), :);
+    CD_scores = CD_G_P(idxMIM(i), :);
     g_p_neighbors = find(bridgeM(:, idxG(i)));
     g_g_neighbors = find(PPIM(:, idxG(i)));
     if (PPIM(idxG(i), idxG(i)) == 0)
              g_g_neighbors(end + 1) = idxG(i);
     end
+    
+    %Finding union of 1st phenotypes neigbors
+     NuORNv_p = length(union(p_p_neighbors, g_p_neighbors));
+     %Finding union of 1st genes neigbors
+     NuORNv_g = length(union(p_g_neighbors, g_g_neighbors));
+      %Total union
+      NuORNv = NuORNv_p + NuORNv_g;
     
      %find number common phenotypes neighbors between pheno i and gene j
       NuANDNv_p = sum(ismember(p_p_neighbors, g_p_neighbors));
@@ -57,11 +66,15 @@ for i = 1 : length(idxMIM)
       NvMinusNu_p = length(setdiff(g_p_neighbors, p_p_neighbors));
       %Total Nv - Nu
       NvMinusNu = NvMinusNu_g + NvMinusNu_p;
-        
-      FS_score = ((2*NuANDNv)/(NuMinusNv + 2*NuANDNv)) * ((2*NuANDNv)/(NvMinusNu + 2*NuANDNv));;
-    FS_scores(idxG(i)) = FS_score;
-    FS_scores(p_g_neighbors) = 0; %prevent remaining phenotype-related genes from
-                                                       %being ranked top
+     
+        %Symmetric different
+        NuDeltaNv = NuMinusNv + NvMinusNu;
+%       FS_score = ((2*NuANDNv)/(NuMinusNv + 2*NuANDNv)) * ((2*NuANDNv)/(NvMinusNu + 2*NuANDNv));;
+      CD_score = NuDeltaNv/(NuANDNv + NuORNv);
+%     FS_scores(idxG(i)) = FS_score;
+    CD_scores(idxG(i)) = CD_score;
+%     FS_scores(p_g_neighbors) = 0; %prevent remaining phenotype-related genes from
+    CD_scores(p_g_neighbors) = 0; %being ranked top
     
     %[p,d,steps] = rwrH(PPIW,MimW,G2P,P2G,gamma,lamda,eta,d0,p0);
     
@@ -72,8 +85,11 @@ for i = 1 : length(idxMIM)
     test_idx = find(ismember(cell2mat(genes(:,1)),test_genes));
     
     %rank: 1428 * 2
-    result_p = sort(FS_scores(test_idx),'descend');
-    rank(i,1) = round(mean(find(result_p == FS_scores(idxG(i)))));
+%     result_p = sort(FS_scores(test_idx),'descend');
+%     rank(i,1) = round(mean(find(result_p == FS_scores(idxG(i)))));
+    
+    result_p = sort(CD_scores(test_idx),'descend');
+    rank(i,1) = round(mean(find(result_p == CD_scores(idxG(i)))));
     
     bridgeM(idxMIM(i),idxG(i)) = 1; % restore briging matrix for the next loop
     
@@ -83,13 +99,16 @@ for i = 1 : length(idxMIM)
        disp(['////////////////// ' num2str(cnt) '  in ' num2str(i) '  \\\\\\\\\\\\\\\\\\\\'])
    end  
    
-  result_p2 = sort(FS_scores,'descend');
-  rank(i,2) = round(mean(find(result_p2 == FS_scores(idxG(i)))));
+%   result_p2 = sort(FS_scores,'descend');
+%   rank(i,2) = round(mean(find(result_p2 == FS_scores(idxG(i)))));
+  
+   result_p2 = sort(CD_scores,'descend');
+  rank(i,2) = round(mean(find(result_p2 == CD_scores(idxG(i)))));
   
 %   rank(i,3) = MimIDs_5080(idxMIM(i));
 %   rank(i,4) = genes{idxG(i),1}; % hprd id
 end
-TTT = cputime-t;
+TTT = cputime-t
 LOO1 = sum(rank(:,1)==1);
 LOO2 = sum(rank(:,2)==1);
 % save Results_PPI rank Nstep TTT cutoff lamda gamma Results

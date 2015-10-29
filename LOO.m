@@ -8,23 +8,22 @@ PPIM = (PPIM>0);
 load BridgeM                    %5080 phenotypes * 8919 genes matrix
 load NeighboringGenes   %1428 * 1 (gene-phenotype links)
 
-load Sfs_P_P;
-load Sfs_G_G;
-load Sfs_G_P;
 
 Ng = length(genes);                 %gene: 8919 genes * 5 matrix
 Nd = size(MimIDs_5080,1);   %phenotype: 5080 * 1
 % to get the transition matrix for gene network
 for i = 1 : Ng
     PPIW(:,i) = PPIM(:,i)/sum(PPIM(:,i));
+%     PPIW(:,i) = Sfs_G_G(:,i)/sum(Sfs_G_G(:,i));
 end
-% clear PPIM
+clear PPIM
 
 % to get the transition matrix for phenotype network
 for i = 1 : Nd
     MimW(:,i) = MimM(:,i)/sum(MimM(:,i));
+%     MimW(:,i) = Sfs_P_P(:,i)/sum(Sfs_P_P(:,i));
 end
-% clear MimM
+clear MimM
 
 
 [idxMIM, idxG] = find(bridgeM); %1428, 1428
@@ -56,7 +55,8 @@ for i = 1 : length(idxMIM)
     
     G2P = bridgeM; G2P(:) = 0; % to initialize the transition matrix
     for ii = 1 : length(idx1)
-        G2P(:,idx1(ii)) = bridgeM(:,idx1(ii))/sum(bridgeM(:,idx1(ii)));        
+        G2P(:,idx1(ii)) = bridgeM(:,idx1(ii))/sum(bridgeM(:,idx1(ii)));
+%         G2P(:,idx1(ii)) = bridgeM(:,idx1(ii))/sum(bridgeM(:,idx1(ii)));
     end
 
 % to calculate the transition matrix from phenotype network to gene network
@@ -133,7 +133,7 @@ for i = 1 : length(idxMIM)
         %----------------------------------------------------------------------
     
    
-    
+%     [p,d,steps] = rwrH(Sfs_G_G,Sfs_P_P,Sfs_G_P,Sfs_G_P',gamma,lamda,eta,d0,p0);
     [p,d,steps] = rwrH(PPIW,MimW,G2P,P2G,gamma,lamda,eta,d0,p0);
     p(train_idx)=0; % p values for seed nodes are set at zero
     
@@ -161,7 +161,7 @@ for i = 1 : length(idxMIM)
 %   rank(i,3) = MimIDs_5080(idxMIM(i));
 %   rank(i,4) = genes{idxG(i),1}; % hprd id
 end
-TTT = cputime-t;
+TTT = cputime-t
 LOO1 = sum(rank(:,1)==1);
 LOO2 = sum(rank(:,2)==1);
 % save Results_PPI rank Nstep TTT cutoff lamda gamma Results

@@ -1,6 +1,7 @@
 function cnt = abInitioSFS()
 % cnt = abInitioSFS()
 
+load CD_G_P;
 load Sfs_G_P;
 load PPIM;
 load bridgeM;
@@ -37,7 +38,8 @@ for i = 1 : length(gMim)
     %idxG ~ p_g_neighbors
     
     %get the Sfs distance from phenotype idxD to all genes
-    FS_scores = Sfs_G_P(idxD, :);
+%     FS_scores = Sfs_G_P(idxD, :);
+    CD_scores = CD_G_P(idxD, :);
     
     for j = 1 : length(idxG)
         disp(j)
@@ -48,7 +50,13 @@ for i = 1 : length(gMim)
              g_g_neighbors(end + 1) = idxG(j);
          end
         
-        
+        %Finding union of 1st phenotypes neigbors
+        NuORNv_p = length(union(p_p_neighbors, g_p_neighbors));
+        %Finding union of 1st genes neigbors
+        NuORNv_g = length(union(p_g_neighbors, g_g_neighbors));
+        %Total union
+        NuORNv = NuORNv_p + NuORNv_g;
+         
         %Replace the previous FS_score with new one %find number common phenotypes neighbors between pheno i and gene j
         NuANDNv_p = sum(ismember(p_p_neighbors, g_p_neighbors));
         
@@ -72,25 +80,36 @@ for i = 1 : length(gMim)
         %Total Nv - Nu
         NvMinusNu = NvMinusNu_g + NvMinusNu_p;
         
-        FS_score = ((2*NuANDNv)/(NuMinusNv + 2*NuANDNv)) * ((2*NuANDNv)/(NvMinusNu + 2*NuANDNv));;
-        FS_scores(idxG(j)) = FS_score;
+%         FS_score = ((2*NuANDNv)/(NuMinusNv + 2*NuANDNv)) * ((2*NuANDNv)/(NvMinusNu + 2*NuANDNv));;
+%         FS_scores(idxG(j)) = FS_score;
+
+        %Symmetric different
+        NuDeltaNv = NuMinusNv + NvMinusNu;
+        
+        CD_score = NuDeltaNv/(NuANDNv + NuORNv);
+        CD_scores(idxG(j)) = CD_score;
+        
     end
     
     %[p,d,steps] = rwrH(PPIW,MimW,G2P,P2G,gamma,lamda,eta,d0,p0);
-    result_p = sort(FS_scores,'descend');
+%     result_p = sort(FS_scores,'descend');
+    result_p = sort(CD_scores,'descend');
     if length(idxG)>1
         rankTem=[];
         for j = 1 : length(idxG)
-            rankTem(j,1) = round(mean(find(result_p == FS_scores(idxG(j)))));            
+%             rankTem(j,1) = round(mean(find(result_p == FS_scores(idxG(j)))));            
+            rankTem(j,1) = round(mean(find(result_p == CD_scores(idxG(j)))));            
+
         end
         cnt = cnt + sum(rankTem==1);
         rank{i,1} = rankTem;  
     else
-        rank{i,1} = round(mean(find(result_p == FS_scores(idxG))));
+%         rank{i,1} = round(mean(find(result_p == FS_scores(idxG))));
+        rank{i,1} = round(mean(find(result_p == CD_scores(idxG))));
         cnt = cnt + sum(rank{i,1}==1);
     end
     bridgeM(idxD,idxG)  = 1; %restore the gene-phenotype link
 %     Nstep(i,1) = steps;
 end
-TTT = cputime-t;
+TTT = cputime-t
 datestr(now)

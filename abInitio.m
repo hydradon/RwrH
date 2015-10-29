@@ -97,5 +97,5 @@ for i = 1 : length(gMim)
     bridgeM(idxD,idxG)  = 1;
     Nstep(i,1) = steps;
 end
-TTT = cputime-t;
+TTT = cputime-t
 datestr(now)
