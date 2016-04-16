@@ -1,82 +1,48 @@
-% function [LOO1,LOO2] = LOO(lamda,gamma,eta,alpha)
 function [LOO1,LOO2] = LOO(lamda,gamma,eta)
-
-% alpha: importance of PPIM over SFS matrix (higher alpha, more important)
 % [LOO1,LOO2] = LOO(0.7, 0.5, 0.5)
-% [LOO1,LOO2] = LOO(0.9, 0.2, 0.95)
-% [LOO1,LOO2] = LOO(0.7, 0.2, 0.95)
-% [LOO1,LOO2] = LOO(0.5, 0.7, 0.5) %baseline 814/245
-load Mim5NN %Mim5NN includes MimM and MimW, each 5080 * 8919
+load Mim5NN
 clear MimW
-clear PPIW
-load PPIM      %PPI (A_G)matrix 8919 * 8919
+load PPIM
 PPIM = (PPIM>0);
-load BridgeM                    %5080 phenotypes * 8919 genes matrix
-load NeighboringGenes   %1428 * 1 (gene-phenotype links)
-% load Sfs_G_G_2
-% load Sfs_P_P
-% load Sfs_G_G
+load BridgeM
+load NeighboringGenes
 
-Ng = length(genes);                 %gene: 8919 genes * 5 matrix
-Nd = size(MimIDs_5080,1);   %phenotype: 5080 * 1
+Ng = length(genes);
+Nd = size(MimIDs_5080,1); 
+
 % to get the transition matrix for gene network
 for i = 1 : Ng
     PPIW(:,i) = PPIM(:,i)/sum(PPIM(:,i));
-%     PPIW(:,i) = Sfs_G_G(:,i)/sum(Sfs_G_G(:,i));
 end
 clear PPIM
-
-% get normalized transition matrix of Sfs_G_G
-% for i = 1 : Ng
-%     Sfs_G_G(find(Sfs_G_G(:, i) < 0.1), i) = 0;
-%     Sfs_G_G_w(:, i) = Sfs_G_G(:, i)/sum(Sfs_G_G(:, i));
-% end
-% clear Sfs_G_G
 
 % to get the transition matrix for phenotype network
 for i = 1 : Nd
     MimW(:,i) = MimM(:,i)/sum(MimM(:,i));
-%     MimW(:,i) = Sfs_P_P(:,i)/sum(Sfs_P_P(:,i));
 end
 clear MimM
 
 
-[idxMIM, idxG] = find(bridgeM); %1428, 1428
-
+[idxMIM, idxG] = find(bridgeM);
 cnt = 0;
 t = cputime;
 Nstep = [];
 % leave each phenotype-gene relationship out
 for i = 1 : length(idxMIM)
-    d0 = zeros(Nd,1);   %return a Nd * 1 all zeros matrix
-    
-    %----------------------------------------------------------------------
-    % assigning neighboring phenotypes as seed phenotypes
-%     adjPhenotype = find(MimM(:, idxMIM(i)));  
-%     for j = 1 : length(adjPhenotype)
-%         (adjPhenotype(j)) = MimW(idxMIM(i), adjPhenotype(j));
-%     end
-    %----------------------------------------------------------------------
+    d0 = zeros(Nd,1);
     d0(idxMIM(i)) = 1; % seed phenotype
-    
-%     d0 = rwr(MimM, d0, 0.3); %gamma = 0.1, 0.3, 0.5, 0.7, 0.9
-    
-    d0 = d0/sum(d0);
     bridgeM(idxMIM(i),idxG(i)) = 0; % remove the phenotype- gene relationship
 
 % to calculate the transition matrix from gene network to phenotype network
-    %sum(bridgeM) =  rows of sum of each collumn
-    idx1 = find(sum(bridgeM) > 0);    %937
-    
+    idx1 = find(sum(bridgeM) > 0);    
     G2P = bridgeM; G2P(:) = 0; % to initialize the transition matrix
     for ii = 1 : length(idx1)
-        G2P(:,idx1(ii)) = bridgeM(:,idx1(ii))/sum(bridgeM(:,idx1(ii)));
-%         G2P(:,idx1(ii)) = bridgeM(:,idx1(ii))/sum(bridgeM(:,idx1(ii)));
+        G2P(:,idx1(ii)) = bridgeM(:,idx1(ii))/sum(bridgeM(:,idx1(ii)));        
     end
 
 % to calculate the transition matrix from phenotype network to gene network
     B = bridgeM';
-    idx2 = find(sum(B) > 0);  %1126
+    idx2 = find(sum(B) > 0);
     P2G = bridgeM'; P2G(:) = 0;
     for ii = 1 : length(idx2)
         P2G(:,idx2(ii)) = B(:,idx2(ii))/sum(B(:,idx2(ii))); 
@@ -87,94 +53,27 @@ for i = 1 : length(idxMIM)
     p0=zeros(Ng,1);
     tem = P2G(:,idxMIM(i));
     train_idx = find(tem>0); % seed genes
-    
     if ~isempty(train_idx)    
         p0(train_idx) = 1;
-        
-        %----------------------------------------------------------------------
-        %find neighboring genes of seed genes
-%         for j = 1 : length(train_idx)
-%             adjGenes = find(PPIM(:, train_idx(j)));
-%     
-%             for a = 1 : length(adjGenes)
-%                 
-%                 p0(adjGenes(a)) = 1;
-%                 
-% %                 if (p0(adjGenes(a)) ~= 1)
-% %                     p0(adjGenes(a)) = PPIM(adjGenes(a), train_idx(j));
-% %                 end
-%             end
-%         end
-        %----------------------------------------------------------------------
-        
-        
-        
-        %----------------------------------------------------------------------
-        %assigning genes of neighboring phenotypes as seed genes
-%         for j = 1 : length(adjPhenotype)
-%             causeGenes = find(P2G(:, adjPhenotype(j)));
-%             pSimilarity = MimM(adjPhenotype(j), idxMIM(i));
-%             
-%             for a = 1 : length(causeGenes)
-%                 seedGeneValue = pSimilarity * P2G(causeGenes(a), adjPhenotype(j));
-%                 
-%                 if(p0(causeGenes(a)) < seedGeneValue)
-%                     p0(causeGenes(a)) = seedGeneValue;
-%                 end
-%             end
-%         end
-        %----------------------------------------------------------------------
-  
         p0 = p0/sum(p0);
     end
     
-     %----------------------------------------------------------------------
-%         %rwr on genes network
-%         for j = 1 : length(adjPhenotype)
-%             causeGenes = find(P2G(:, adjPhenotype(j)));
-% %             pSimilarity = MimM(adjPhenotype(j), idxMIM(i));
-%             
-%             for a = 1 : length(causeGenes)
-% %                 seedGeneValue = pSimilarity * P2G(causeGenes(a), adjPhenotype(j));
-%                 seedGeneValue = d0(adjPhenotype(j));
-% 
-%                 if(p0(causeGenes(a)) < seedGeneValue)
-%                     p0(causeGenes(a)) = seedGeneValue;
-%                 end
-%             end
-%         end
-%         
-%     p0 = rwr(PPIM, p0, 0.3);
-        %----------------------------------------------------------------------
-    
-   
-%     [p,d,steps] = rwrH(Sfs_G_G,Sfs_P_P,Sfs_G_P,Sfs_G_P',gamma,lamda,eta,d0,p0);
-%     [p,d,steps] = rwrH(PPIW,Sfs_G_G_w,MimW,G2P,P2G,gamma,lamda,eta,alpha,d0,p0);
     [p,d,steps] = rwrH(PPIW,MimW,G2P,P2G,gamma,lamda,eta,d0,p0);
     p(train_idx)=0; % p values for seed nodes are set at zero
     
-    
 %     to find the position of the left-out gene among test genes
     test_genes = NeighboringGenes{i};   
-    
-    %test_idx: indices of all neighbor genes of idxG(i) gene
     test_idx = find(ismember(cell2mat(genes(:,1)),test_genes));
-    
-    %rank: 1428 * 2
     result_p = sort(p(test_idx),'descend');
     rank(i,1) = round(mean(find(result_p == p(idxG(i)))));
-    
     bridgeM(idxMIM(i),idxG(i)) = 1; % restore briging matrix for the next loop
-    
     Nstep(i,1) = steps; % to count the number steps to converge
     if rank(i,1)==1 cnt = cnt + 1; end
-%    if (~mod(i,10) || i > 1400)
-%        disp(['////////////////// ' num2str(cnt) '  in ' num2str(i) '  \\\\\\\\\\\\\\\\\\\\'])
-%    end  
-   
+   if (~mod(i,10) || i > 1400)
+       disp(['////////////////// ' num2str(cnt) '  in ' num2str(i) '  \\\\\\\\\\\\\\\\\\\\'])
+   end  
   result_p2 = sort(p,'descend');
   rank(i,2) = round(mean(find(result_p2 == p(idxG(i)))));
-  
 %   rank(i,3) = MimIDs_5080(idxMIM(i));
 %   rank(i,4) = genes{idxG(i),1}; % hprd id
 end
