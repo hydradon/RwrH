@@ -5,6 +5,7 @@ load Mim5NN
 load PPIM
 PPIM = (PPIM>0);
 load BridgeM
+load Sfs_P_P
 
 Ng = length(genes);
 Nd = size(MimIDs_5080,1); 
@@ -17,7 +18,8 @@ clear PPIM
 
 % to get the transition matrix for phenotype network
 for i = 1 : Nd
-    MimW(:,i) = MimM(:,i)/sum(MimM(:,i));
+%     MimW(:,i) = MimM(:,i)/sum(MimM(:,i));
+    MimW(:,i) = Sfs_P_P(:,i)/sum(Sfs_P_P(:,i));
 end
 clear MimM
 

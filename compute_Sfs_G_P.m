@@ -2,12 +2,12 @@ load PPIM;
 load bridgeM;
 load Mim5NN;
 
-Np = size(MimIDs_5080, 1);
-Ng = length(genes);
-Sfs_G_P = zeros(Np, Ng);
+Np = size(MimIDs_5080, 1);  %5080
+Ng = length(genes);         %8919
+Sfs_G_P_2 = zeros(Np, Ng);
 
 for i = 1 : Np
-    p_p_neighbors = find(MimM(i, :));
+    p_p_neighbors = find(MimM(i, :) >= 0.5);
     if (MimM(i, i) == 0)
         p_p_neighbors(end + 1) = i;
     end
@@ -38,15 +38,15 @@ for i = 1 : Np
         
         %Finding Nv - Nu for genes
         NvMinusNu_g = length(setdiff(g_g_neighbors, p_g_neighbors));
-        %Finding Nv - Nv for phenotypes
+        %Finding Nv - Nu for phenotypes
         NvMinusNu_p = length(setdiff(g_p_neighbors, p_p_neighbors));
         %Total Nv - Nu
         NvMinusNu = NvMinusNu_g + NvMinusNu_p;
         
-        Sfs_G_P(i, j) = ((2*NuANDNv)/(NuMinusNv + 2*NuANDNv)) * ((2*NuANDNv)/(NvMinusNu + 2*NuANDNv));
+        Sfs_G_P_2(i, j) = ((2*NuANDNv)/(NuMinusNv + 2*NuANDNv)) * ((2*NuANDNv)/(NvMinusNu + 2*NuANDNv));
         
         disp(['i is' num2str(i) ', j is' num2str(j)]); 
     end
 end
 
-save Sfs.mat Sfs_G_P
+save Sfs2.mat Sfs_G_P_2

@@ -1,5 +1,11 @@
+% function [LOO1,LOO2] = LOO(lamda,gamma,eta,alpha)
 function [LOO1,LOO2] = LOO(lamda,gamma,eta)
+
+% alpha: importance of PPIM over SFS matrix (higher alpha, more important)
 % [LOO1,LOO2] = LOO(0.7, 0.5, 0.5)
+% [LOO1,LOO2] = LOO(0.9, 0.2, 0.95)
+% [LOO1,LOO2] = LOO(0.7, 0.2, 0.95)
+% [LOO1,LOO2] = LOO(0.5, 0.7, 0.5) %baseline 814/245
 load Mim5NN %Mim5NN includes MimM and MimW, each 5080 * 8919
 clear MimW
 clear PPIW
@@ -7,7 +13,9 @@ load PPIM      %PPI (A_G)matrix 8919 * 8919
 PPIM = (PPIM>0);
 load BridgeM                    %5080 phenotypes * 8919 genes matrix
 load NeighboringGenes   %1428 * 1 (gene-phenotype links)
-
+% load Sfs_G_G_2
+% load Sfs_P_P
+% load Sfs_G_G
 
 Ng = length(genes);                 %gene: 8919 genes * 5 matrix
 Nd = size(MimIDs_5080,1);   %phenotype: 5080 * 1
@@ -17,6 +25,13 @@ for i = 1 : Ng
 %     PPIW(:,i) = Sfs_G_G(:,i)/sum(Sfs_G_G(:,i));
 end
 clear PPIM
+
+% get normalized transition matrix of Sfs_G_G
+% for i = 1 : Ng
+%     Sfs_G_G(find(Sfs_G_G(:, i) < 0.1), i) = 0;
+%     Sfs_G_G_w(:, i) = Sfs_G_G(:, i)/sum(Sfs_G_G(:, i));
+% end
+% clear Sfs_G_G
 
 % to get the transition matrix for phenotype network
 for i = 1 : Nd
@@ -36,11 +51,11 @@ for i = 1 : length(idxMIM)
     d0 = zeros(Nd,1);   %return a Nd * 1 all zeros matrix
     
     %----------------------------------------------------------------------
-    %assigning neighboring phenotypes as seed phenotypes
+    % assigning neighboring phenotypes as seed phenotypes
 %     adjPhenotype = find(MimM(:, idxMIM(i)));  
-%    for j = 1 : length(adjPhenotype)
-%         d0(adjPhenotype(j)) = MimW(idxMIM(i), adjPhenotype(j));
-%    end
+%     for j = 1 : length(adjPhenotype)
+%         (adjPhenotype(j)) = MimW(idxMIM(i), adjPhenotype(j));
+%     end
     %----------------------------------------------------------------------
     d0(idxMIM(i)) = 1; % seed phenotype
     
@@ -134,8 +149,10 @@ for i = 1 : length(idxMIM)
     
    
 %     [p,d,steps] = rwrH(Sfs_G_G,Sfs_P_P,Sfs_G_P,Sfs_G_P',gamma,lamda,eta,d0,p0);
+%     [p,d,steps] = rwrH(PPIW,Sfs_G_G_w,MimW,G2P,P2G,gamma,lamda,eta,alpha,d0,p0);
     [p,d,steps] = rwrH(PPIW,MimW,G2P,P2G,gamma,lamda,eta,d0,p0);
     p(train_idx)=0; % p values for seed nodes are set at zero
+    
     
 %     to find the position of the left-out gene among test genes
     test_genes = NeighboringGenes{i};   
@@ -151,9 +168,9 @@ for i = 1 : length(idxMIM)
     
     Nstep(i,1) = steps; % to count the number steps to converge
     if rank(i,1)==1 cnt = cnt + 1; end
-   if (~mod(i,10) || i > 1400)
-       disp(['////////////////// ' num2str(cnt) '  in ' num2str(i) '  \\\\\\\\\\\\\\\\\\\\'])
-   end  
+%    if (~mod(i,10) || i > 1400)
+%        disp(['////////////////// ' num2str(cnt) '  in ' num2str(i) '  \\\\\\\\\\\\\\\\\\\\'])
+%    end  
    
   result_p2 = sort(p,'descend');
   rank(i,2) = round(mean(find(result_p2 == p(idxG(i)))));
@@ -161,7 +178,7 @@ for i = 1 : length(idxMIM)
 %   rank(i,3) = MimIDs_5080(idxMIM(i));
 %   rank(i,4) = genes{idxG(i),1}; % hprd id
 end
-TTT = cputime-t
+TTT = cputime-t;
 LOO1 = sum(rank(:,1)==1);
 LOO2 = sum(rank(:,2)==1);
 % save Results_PPI rank Nstep TTT cutoff lamda gamma Results
